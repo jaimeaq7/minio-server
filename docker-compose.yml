@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  minio:
+    image: minio/minio
+    container_name: minio_server
+#    ports:
+#      - '9000:9000'
+#      - '9001:9001'
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: server /data --console-address ":9001"
+    networks:
+      - reverseproxy
+    volumes:
+      - minio-server-data:/data
+    env_file:
+      - .env
+      
+  nginx:
+    image: nginx:1.19.2-alpine
+    hostname: minio_nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+#      - ./certs/nginx.key:/root/ssl/nginx.key    #ssl key
+#      - ./certs/nginx.crt:/root/ssl/nginx.crt   #ssl cert
+#    ports:
+#      - "9000:9000"
+#      - "9001:9001"
+    networks:
+      - reverseproxy
+    depends_on:
+      - minio
+
+networks:
+  reverseproxy:
+    external: true
+
+volumes:
+  minio-server-data:
+   external: true
